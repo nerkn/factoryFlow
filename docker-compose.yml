@@ -1,0 +1,49 @@
+version: '3.1'
+
+
+#there are 2 normal services and 2 dev services, 
+# dev services conflicts with normal services so only one instance can run
+services:
+  flowmobilBackDev:
+    image: node
+    volumes:
+      - ./flowmobilBack:/app
+      - ./pnpm:/pnpm
+    working_dir: /app 
+    entrypoint: ["bash", "-c", "npm install -g pnpm && ls -l && pwd && pnpm install && pnpm dev"]
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    
+  flowmobilBack:
+    image: node
+    volumes:
+      - ./flowmobilBack:/app
+      - ./pnpm:/pnpm
+    entrypoint: ["bash", "-c", "npm install -g pnpm &&  pnpm run start"]
+    working_dir: /app 
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    
+  flowmobilDev:
+    image: node
+    volumes:
+      - ./flowmobil:/app
+      - ./pnpm:/pnpm
+    working_dir: /app 
+    entrypoint: ["bash", "-c", "npm install -g pnpm &&  pnpm dev"]
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    
+  flowmobil:
+    image: node
+    volumes:
+      - ./flowmobil:/app
+      - ./pnpm:/pnpm
+    working_dir: /app 
+    entrypoint: ["bash", "-c", "npm install -g pnpm &&  pnpm run build && pnpm preview"]
+    ports:
+      - "5173:5173"
+    restart: unless-stopped

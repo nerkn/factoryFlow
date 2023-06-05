@@ -1,0 +1,68 @@
+import axios from "axios";
+import { xcrossDefDb } from "./types";
+
+class xcrossDef{
+  definition:xcrossDefDb = {id:0,desc:'not loaded', title:'not loaded', table1:'', table2:'', params:'', paramsParsed:false}; 
+  preloadedVals:any = [];
+  forcer:Function;
+  constructor({title, id, def, forcer}:
+    {title:undefined|string, id:undefined|number, def:undefined|xcrossDefDb, forcer:Function}){
+      this.forcer = forcer;
+    if(def){
+      console.log(def)
+      this.definition = def;
+      this.onDefLoaded();
+    }else{
+      if(id){
+        this.defLoader('id', id);
+      }else{
+        if(!title)
+          throw new Error("id or title should be provided");
+        this.defLoader('title',title)
+      }
+    }
+  }
+  onDefLoaded(){
+    let p = JSON.parse(this.definition.params)
+    axios(`/api/v1/${this.definition.table2}?where=${p.table2.column},eq,${p.table2.value}`).then(p=>{
+      this.preloadedVals = p.data.data;  
+      this.forcer(s=>s+1)
+    })
+  }
+  /**
+   * loades if definition is not provided
+   * @param field if title provided, it will title, ifnot id
+   * @param value value of provided identifier
+   */
+  defLoader(field:string,value:number|string){
+    let that = this;
+    axios(`/api/v1/xcrossDef?where=${field},eq,${value}`)
+      .then(r=>{
+                  that.definition = r.data.data; 
+                  that.onDefLoaded()
+                })
+  }
+  /**
+   * finds first value from second ones
+   * if relation is user, category this finds userids from catids
+   * @param vals secondary values of association
+   * @returns promise of ids of first values of association
+   */
+  getKeys(vals:string|number){
+    return axios(`/api/v1/xcrossValues?where=table2,eq,${vals}`)
+      .then(r=>r.data.data.map(r=>r.table1))
+  }
+
+  getValueDetails(vals:string|number){
+    return axios(`/api/v1/xcrossValues?where=table2,eq,${vals}`)
+      .then(r=>{
+        let ids = r.data.data.map(r=>r.table1).join(',')
+        if(ids)
+          return axios(`/api/v1/${this.definition.table1}?where=id,in,${ids}`).then(r=>r.data.data)
+        return []
+      })
+      
+  }
+
+}
+export default xcrossDef;
